@@ -262,7 +262,8 @@ UPDATE SUPPLYORDERS SET TotalCost = (
 -- Increase inventory levels by quantities received in the supply order
 UPDATE INVENTORYITEMS SET Quantity = Quantity + (
     SELECT SUM(Quantity) FROM SUPPLYORDERITEMS WHERE SupplyOrderID=@SO1 AND InventoryID=INVENTORYITEMS.InventoryID
-);
+)
+WHERE InventoryID IN (SELECT InventoryID FROM SUPPLYORDERITEMS WHERE SupplyOrderID=@SO1);
 
 DECLARE @SO2 INT;
 INSERT INTO SUPPLYORDERS (SupplierID, OrderDate, TotalCost)
@@ -281,7 +282,8 @@ UPDATE SUPPLYORDERS SET TotalCost = (
 
 UPDATE INVENTORYITEMS SET Quantity = Quantity + (
     SELECT SUM(Quantity) FROM SUPPLYORDERITEMS WHERE SupplyOrderID=@SO2 AND InventoryID=INVENTORYITEMS.InventoryID
-);
+)
+WHERE InventoryID IN (SELECT InventoryID FROM SUPPLYORDERITEMS WHERE SupplyOrderID=@SO2);
 
 
 
@@ -303,12 +305,12 @@ SELECT c.CustomerID,
        0,
        'Paid'
 FROM CUSTOMERS c
+CROSS JOIN (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5) x
 WHERE (c.FirstName='Mohamed' AND c.LastName='Ali')
-   OR (c.FirstName='Amira' AND c.LastName='Hamed')
-   OR (c.FirstName='Heba' AND c.LastName='Saad')
-   OR (c.FirstName='Mahmoud' AND c.LastName='Farag')
-   OR (c.FirstName='Nour' AND c.LastName='El Gendy')
-CROSS JOIN (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5) x;
+    OR (c.FirstName='Amira' AND c.LastName='Hamed')
+    OR (c.FirstName='Heba' AND c.LastName='Saad')
+    OR (c.FirstName='Mahmoud' AND c.LastName='Farag')
+    OR (c.FirstName='Nour' AND c.LastName='El Gendy');
 
 
 -- Line items per customer for mass dine-in orders
@@ -444,13 +446,14 @@ UPDATE ORDERS SET TotalAmount = (
    - Inserts 6–14 orders per day with randomized customers, staff, and order types
    - Adds 1–3 items per order and computes totals
 */
+-- Table variable collects IDs of newly inserted orders over the last year
+DECLARE @NewOrders TABLE (OrderID INT);
+
 ;WITH Dates AS (
     SELECT CAST(DATEADD(day, -364, @AnchorDate) AS date) AS d
     UNION ALL
     SELECT DATEADD(day, 1, d) FROM Dates WHERE DATEADD(day, 1, d) <= @AnchorDate
 )
--- Table variable collects IDs of newly inserted orders over the last year
-DECLARE @NewOrders TABLE (OrderID INT);
 
 -- Create randomized orders and capture inserted OrderIDs
 INSERT INTO ORDERS (CustomerID, StaffID, OrderType, OrderDateTime, TotalAmount, PaymentStatus)
@@ -472,6 +475,11 @@ CROSS APPLY (
     SELECT CAST(ABS(CHECKSUM(@Seed, DATEDIFF(day,'20000101', d), 100)) % 9 + 6 AS INT) AS OrdersPerDay
 ) c
 CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15)) N(n)
+CROSS APPLY (
+    SELECT TOP 1 CustomerID AS PickedCustomerID
+    FROM CUSTOMERS
+    ORDER BY ABS(CHECKSUM(@Seed, DATEDIFF(day,'20000101', d), N.n, CustomerID))
+) cust
 WHERE N.n <= c.OrdersPerDay
 OPTION (MAXRECURSION 0);
 
@@ -509,11 +517,12 @@ JOIN (
    - Inserts one supply order per supplier per month
    - Adds 3–6 line items, computes supply order totals, and updates inventory
 */
+DECLARE @SupplyOrders TABLE (SupplyOrderID INT);
+
 ;WITH Months AS (
 SELECT DATEFROMPARTS(YEAR(DATEADD(month, -m, @AnchorDate)), MONTH(DATEADD(month, -m, @AnchorDate)), 1) AS m
     FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11)) t(m)
 )
-DECLARE @SupplyOrders TABLE (SupplyOrderID INT);
 
 INSERT INTO SUPPLYORDERS (SupplierID, OrderDate, TotalCost)
 OUTPUT INSERTED.SupplyOrderID INTO @SupplyOrders
@@ -533,6 +542,7 @@ SELECT
     CAST(ABS(CHECKSUM(@Seed, s.SupplierID, DATEDIFF(month,'20000101', s.OrderDate))) % 150 + 30 AS INT),
     CAST(ABS(CHECKSUM(@Seed, s.SupplierID, DATEDIFF(month,'20000101', s.OrderDate), inv.InventoryID)) % 50 + 5 AS DECIMAL(10,2))
 FROM @SupplyOrders so
+JOIN SUPPLYORDERS s ON s.SupplyOrderID = so.SupplyOrderID
 CROSS APPLY (SELECT CAST(ABS(CHECKSUM(@Seed, DATEDIFF(month,'20000101', s.OrderDate), s.SupplierID)) % 4 + 3 AS INT) AS ItemCount) ic
 CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6)) I(i)
 CROSS APPLY (

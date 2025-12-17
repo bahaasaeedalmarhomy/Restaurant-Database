@@ -14,25 +14,25 @@ This repository contains T‑SQL scripts to create and seed a complete restauran
 - `Scripts\seed_restaurant_database_tanta.sql` — populates core reference data, menu items, inventory and recipes, sample customers, reservations, supply orders, and realistic historical orders.
 
 ## Quickstart (sqlcmd)
-Use Windows authentication (`-E`) or SQL authentication (`-U` / `-P`). Replace `localhost` with your server name or instance (e.g., `.\SQLEXPRESS`).
+Use Windows authentication (`-E`) or SQL authentication (`-U` / `-P`). Replace `localhost` with your server name or instance (e.g., `.\SQLEXPRESS`). Add `-C` to trust the server certificate if you encounter SSL errors.
 
 1) Create the database and schema
 ```
-sqlcmd -S localhost -d master -E -b -i "Scripts\create_restaurant_database.sql"
+sqlcmd -S localhost -d master -E -b -i "Scripts\create_restaurant_database.sql" -C
 ```
 2) Align reservation status constraint to match seeding data (recommended)
 ```
-sqlcmd -S localhost -d RestaurantDB -E -b -Q "ALTER TABLE RESERVATIONS DROP CONSTRAINT CK_RESERVATIONS_Status; ALTER TABLE RESERVATIONS ADD CONSTRAINT CK_RESERVATIONS_Status CHECK (Status IN ('Pending','Confirmed','Completed','Canceled','Cancelled','No-Show'));"
+sqlcmd -S localhost -d RestaurantDB -E -b -Q "ALTER TABLE RESERVATIONS DROP CONSTRAINT CK_RESERVATIONS_Status; ALTER TABLE RESERVATIONS ADD CONSTRAINT CK_RESERVATIONS_Status CHECK (Status IN ('Pending','Confirmed','Completed','Canceled','Cancelled','No-Show'));" -C
 ```
 3) Seed the database
 ```
-sqlcmd -S localhost -d RestaurantDB -E -b -i "Scripts\seed_restaurant_database_tanta.sql"
+sqlcmd -S localhost -d RestaurantDB -E -b -i "Scripts\seed_restaurant_database_tanta.sql" -C
 ```
 
 SQL authentication examples:
 ```
-sqlcmd -S localhost -d master -U sa -P "<PASSWORD>" -b -i "Scripts\create_restaurant_database.sql"
-sqlcmd -S localhost -d RestaurantDB -U sa -P "<PASSWORD>" -b -i "Scripts\seed_restaurant_database_tanta.sql"
+sqlcmd -S localhost -d master -U sa -P "<PASSWORD>" -b -i "Scripts\create_restaurant_database.sql" -C
+sqlcmd -S localhost -d RestaurantDB -U sa -P "<PASSWORD>" -b -i "Scripts\seed_restaurant_database_tanta.sql" -C
 ```
 
 Tips:
@@ -65,6 +65,25 @@ SELECT TOP 5 OrderID, OrderType, OrderDateTime, TotalAmount FROM ORDERS ORDER BY
 SELECT TOP 5 CustomerID, TableID, ReservationDateTime, Status FROM RESERVATIONS ORDER BY ReservationDateTime DESC;
 ```
 
+## Analytics
+The `Scripts\restaurant_analytics.sql` provides comprehensive business intelligence with functions, procedures, triggers, and views for data-driven insights.
+
+### Key Reports
+- **Daily Sales Summary**: `EXEC sp_DailySalesSummary '2025-12-01'` - Revenue, top items, peak hours
+- **Customer Loyalty**: `EXEC sp_CustomerLoyaltyReport 5` - Tier classification, lifetime value, retention
+- **Inventory Alerts**: `EXEC sp_InventoryReorderAlert` - Low stock warnings with criticality levels  
+- **Staff Performance**: `EXEC sp_StaffPerformance '2025-01-01', '2025-12-31'` - Sales per employee, efficiency
+- **Monthly Trends**: `EXEC sp_MonthlyTrends 2025` - Revenue patterns, seasonal insights
+- **Menu Profitability**: `EXEC sp_MenuProfitability` - Cost analysis, profit margins per item
+
+### Automated Features
+- **Order Total Updates**: Automatically recalculates totals when order items change
+- **Inventory Monitoring**: Logs alerts when stock drops below reorder levels
+- **Revenue Tracking**: Functions for date-range revenue and customer lifetime value
+- **Operational Views**: Day-of-week revenue patterns, table utilization, supply costs
+
+Deploy analytics: `sqlcmd -S localhost -d RestaurantDB -E -b -i "Scripts\restaurant_analytics.sql" -C`
+
 ## Reset / Rerun
 To reset the database and rerun:
 ```
@@ -77,4 +96,9 @@ GO
 - Constraint error on `RESERVATIONS.Status`: If the seed script fails with a CHECK constraint error, ensure you applied the constraint update shown above so the statuses `'No-Show'` and `'Cancelled'` are allowed.
 - Cannot connect with `sqlcmd`: Confirm the instance name (`-S`), authentication method (`-E` vs `-U`/`-P`), and that SQL Server is running.
 - File path issues: Run commands from the repository root so `Scripts\...` paths resolve correctly, or use absolute paths.
+- SSL certificate errors: Use `-C` flag to trust the server certificate (quick but less secure), or configure a trusted certificate:
+  1. In SQL Server Configuration Manager, enable Force Encryption and install a valid certificate
+  2. Export the SQL Server certificate (certmgr.msc → Local Computer → Personal → Certificates)
+  3. Import to Trusted Root (certmgr.msc → Trusted Root Certification Authorities → Import)
+  4. Remove `-C` flag from commands
 
