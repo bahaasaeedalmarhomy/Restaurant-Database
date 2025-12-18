@@ -36,11 +36,13 @@ CREATE TABLE ROLES (
 CREATE TABLE STAFF (
     StaffID INT IDENTITY(1,1) PRIMARY KEY,
     RoleID INT NOT NULL,
+    -----------------------------------------------
     FirstName VARCHAR(100) NOT NULL,
     LastName VARCHAR(100) NOT NULL,
     Phone VARCHAR(25),
     Email VARCHAR(255),
     HireDate DATE NOT NULL,
+    -----------------------------------------------
     CONSTRAINT FK_STAFF_ROLE FOREIGN KEY (RoleID) REFERENCES ROLES(RoleID)
 );
 
@@ -55,9 +57,11 @@ CREATE TABLE MENUITEMS (
     MenuItemID INT IDENTITY(1,1) PRIMARY KEY,
     CategoryID INT NOT NULL,
     Name VARCHAR(100) NOT NULL,
+    --------------------------------------------------
     Description VARCHAR(500),
-    Price DECIMAL(10,2) NOT NULL CHECK (Price >= 0),
     Available BIT NOT NULL DEFAULT(1), -- Using binary variable to indicate the availability of an item
+    --------------------------------------------------
+    Price DECIMAL(10,2) NOT NULL CHECK (Price >= 0),
     CONSTRAINT FK_MENUITEMS_CATEGORY FOREIGN KEY (CategoryID) REFERENCES MENUCATEGORIES(CategoryID),
     CONSTRAINT UQ_MENUITEMS_Category_Name UNIQUE (CategoryID, Name) -- To ensure that each menu item has a unique name within its category
 );
@@ -68,6 +72,7 @@ CREATE TABLE INVENTORYITEMS (
     Name VARCHAR(100) NOT NULL UNIQUE,
     Quantity INT NOT NULL,
     Unit VARCHAR(50) NOT NULL, -- Specifies the unit used to count the quantity (e.g., "kg," "grams," "liters," "cases," "bottles")
+    
     ReorderLevel INT NOT NULL CHECK (ReorderLevel >= 0) -- To ensure that the reorder level is non-negative
 );
 
@@ -80,9 +85,12 @@ CREATE TABLE RECIPE_INGREDIENTS (
     MenuItemID INT NOT NULL,
     InventoryID INT NOT NULL,
     QuantityRequired DECIMAL(10,2) NOT NULL CHECK (QuantityRequired > 0),
+    ---------------------------------------------------------------------
     Unit VARCHAR(50) NOT NULL,
+    ---------------------------------------------------------------------
     CONSTRAINT FK_RECIPE_MENUITEM FOREIGN KEY (MenuItemID) REFERENCES MENUITEMS(MenuItemID),
     CONSTRAINT FK_RECIPE_INVENTORY FOREIGN KEY (InventoryID) REFERENCES INVENTORYITEMS(InventoryID),
+    
     CONSTRAINT UQ_RECIPE_INGREDIENT UNIQUE (MenuItemID, InventoryID) -- To ensure that a single menu item cannot list the same inventory ingredient twice in its recipe.
 );
 
@@ -91,14 +99,18 @@ CREATE TABLE SUPPLIERS (
     SupplierID INT IDENTITY(1,1) PRIMARY KEY,
     Name VARCHAR(200) NOT NULL UNIQUE,
     ContactEmail VARCHAR(255),
+    ---------------------------------------------------------------------
     Phone VARCHAR(25)
+    ---------------------------------------------------------------------
 );
 
 -- Supply orders placed with suppliers; total cost validated non-negative
 CREATE TABLE SUPPLYORDERS (
     SupplyOrderID INT IDENTITY(1,1) PRIMARY KEY,
     SupplierID INT NOT NULL,
+    ---------------------------------------------------------------------
     OrderDate DATE NOT NULL DEFAULT(GETDATE()),
+    ---------------------------------------------------------------------
     TotalCost DECIMAL(12,2) NOT NULL CHECK (TotalCost >= 0),
     CONSTRAINT FK_SUPPLYORDERS_SUPPLIER FOREIGN KEY (SupplierID) REFERENCES SUPPLIERS(SupplierID)
 );
@@ -108,7 +120,9 @@ CREATE TABLE SUPPLYORDERITEMS (
     SupplyOrderItemID INT IDENTITY(1,1) PRIMARY KEY,
     SupplyOrderID INT NOT NULL,
     InventoryID INT NOT NULL,
+    ---------------------------------------------------------------------
     Quantity INT NOT NULL CHECK (Quantity > 0),
+    ---------------------------------------------------------------------
     CostPerUnit DECIMAL(10,2) NOT NULL CHECK (CostPerUnit >= 0),
     CONSTRAINT FK_SOITEMS_SUPPLYORDER FOREIGN KEY (SupplyOrderID) REFERENCES SUPPLYORDERS(SupplyOrderID),
     CONSTRAINT FK_SOITEMS_INVENTORY FOREIGN KEY (InventoryID) REFERENCES INVENTORYITEMS(InventoryID)
@@ -123,9 +137,11 @@ CREATE TABLE ORDERS (
     CustomerID INT NOT NULL,
     StaffID INT NOT NULL,
     OrderType VARCHAR(20) NOT NULL,
-    OrderDateTime DATETIME NOT NULL DEFAULT(GETDATE()),
     TotalAmount DECIMAL(10,2) NOT NULL CHECK (TotalAmount >= 0),
+    ---------------------------------------------------------------------
+    OrderDateTime DATETIME NOT NULL DEFAULT(GETDATE()),
     PaymentStatus VARCHAR(20) NOT NULL,
+    ---------------------------------------------------------------------
     CONSTRAINT FK_ORDERS_CUSTOMER FOREIGN KEY (CustomerID) REFERENCES CUSTOMERS(CustomerID),
     CONSTRAINT FK_ORDERS_STAFF FOREIGN KEY (StaffID) REFERENCES STAFF(StaffID),
     CONSTRAINT CK_ORDERS_OrderType CHECK (OrderType IN ('Dine-In','Takeout','Delivery')), -- Because T-SQL does not have built-in ENUM type, we use a CHECK constraint to ensure valid order types.
@@ -138,7 +154,9 @@ CREATE TABLE ORDERITEMS (
     OrderID INT NOT NULL,
     MenuItemID INT NOT NULL,
     Quantity INT NOT NULL CHECK (Quantity > 0),
+    ---------------------------------------------------------------------
     PriceAtPurchase DECIMAL(10,2) NOT NULL CHECK (PriceAtPurchase >= 0), -- Important in cases if the prices in the menu changed later
+    ---------------------------------------------------------------------
     CONSTRAINT FK_ORDERITEMS_ORDER FOREIGN KEY (OrderID) REFERENCES ORDERS(OrderID),
     CONSTRAINT FK_ORDERITEMS_MENUITEM FOREIGN KEY (MenuItemID) REFERENCES MENUITEMS(MenuItemID)
 );
