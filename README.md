@@ -9,16 +9,28 @@ This repository contains T‑SQL scripts to create and seed a complete restauran
   - SQL Server Management Studio (SSMS)
 - Clone this repo locally and open a terminal in the project root.
 
-## Scripts
-- `Scripts\create_restaurant_database.sql` — creates database `RestaurantDB` and all tables, indexes, and constraints.
-- `Scripts\seed_restaurant_database_tanta.sql` — populates core reference data, menu items, inventory and recipes, sample customers, reservations, supply orders, and realistic historical orders.
+## Repository Structure
+```
+├── Database-Setup/
+│   ├── buildDB.sql      # Creates RestaurantDB and all tables, indexes, constraints
+│   ├── seedDB.sql       # Populates test data (menu, inventory, customers, orders, etc.)
+│   └── deleteDB.sql     # Drops the database (for reset/cleanup)
+├── Analytics/
+│   ├── Analytics.sql         # Functions, procedures, triggers, and views for BI
+│   ├── useAnalytics.sql      # Testing script with examples for all analytics components
+│   └── Analytics-in-practice.sql  # Ad-hoc query examples for data exploration
+├── ERD-and-Mapping/
+│   ├── Restaurant-ERD-mapping.pdf  # Entity-Relationship Diagram mapping document
+│   └── Resturant-ERD.pdf           # Entity-Relationship Diagram
+└── README.md
+```
 
 ## Quickstart (sqlcmd)
 Use Windows authentication (`-E`) or SQL authentication (`-U` / `-P`). Replace `localhost` with your server name or instance (e.g., `.\SQLEXPRESS`). Add `-C` to trust the server certificate if you encounter SSL errors.
 
 1) Create the database and schema
 ```
-sqlcmd -S localhost -d master -E -b -i "Scripts\create_restaurant_database.sql" -C
+sqlcmd -S localhost -d master -E -b -i "Database-Setup\buildDB.sql" -C
 ```
 2) Align reservation status constraint to match seeding data (recommended)
 ```
@@ -26,13 +38,13 @@ sqlcmd -S localhost -d RestaurantDB -E -b -Q "ALTER TABLE RESERVATIONS DROP CONS
 ```
 3) Seed the database
 ```
-sqlcmd -S localhost -d RestaurantDB -E -b -i "Scripts\seed_restaurant_database_tanta.sql" -C
+sqlcmd -S localhost -d RestaurantDB -E -b -i "Database-Setup\seedDB.sql" -C
 ```
 
 SQL authentication examples:
 ```
-sqlcmd -S localhost -d master -U sa -P "<PASSWORD>" -b -i "Scripts\create_restaurant_database.sql" -C
-sqlcmd -S localhost -d RestaurantDB -U sa -P "<PASSWORD>" -b -i "Scripts\seed_restaurant_database_tanta.sql" -C
+sqlcmd -S localhost -d master -U sa -P "<PASSWORD>" -b -i "Database-Setup\buildDB.sql" -C
+sqlcmd -S localhost -d RestaurantDB -U sa -P "<PASSWORD>" -b -i "Database-Setup\seedDB.sql" -C
 ```
 
 Tips:
@@ -41,7 +53,7 @@ Tips:
 
 ## Quickstart (SSMS GUI)
 1) Open SSMS and connect to your SQL Server.
-- File → Open → `Scripts\create_restaurant_database.sql`
+- File → Open → `Database-Setup\buildDB.sql`
 - Click `Execute`. This creates `RestaurantDB` and its schema.
 
 2) Align reservation status constraint (recommended).
@@ -52,7 +64,7 @@ ALTER TABLE RESERVATIONS ADD CONSTRAINT CK_RESERVATIONS_Status CHECK (Status IN 
 ```
 
 3) Seed the data.
-- File → Open → `Scripts\seed_restaurant_database_tanta.sql`
+- File → Open → `Database-Setup\seedDB.sql`
 - Ensure the database dropdown shows `RestaurantDB`.
 - Click `Execute`.
 
@@ -66,7 +78,7 @@ SELECT TOP 5 CustomerID, TableID, ReservationDateTime, Status FROM RESERVATIONS 
 ```
 
 ## Analytics
-The `Scripts\restaurant_analytics.sql` provides comprehensive business intelligence with functions, procedures, triggers, and views for data-driven insights.
+The `Analytics\Analytics.sql` script provides comprehensive business intelligence with functions, procedures, triggers, and views for data-driven insights.
 
 ### Key Reports
 - **Daily Sales Summary**: `EXEC sp_DailySalesSummary '2025-12-01'` - Revenue, top items, peak hours
@@ -82,10 +94,22 @@ The `Scripts\restaurant_analytics.sql` provides comprehensive business intellige
 - **Revenue Tracking**: Functions for date-range revenue and customer lifetime value
 - **Operational Views**: Day-of-week revenue patterns, table utilization, supply costs
 
-Deploy analytics: `sqlcmd -S localhost -d RestaurantDB -E -b -i "Scripts\restaurant_analytics.sql" -C`
+### Testing Analytics
+Use `Analytics\useAnalytics.sql` for comprehensive testing of all analytics components with example queries.
+
+Use `Analytics\Analytics-in-practice.sql` for ad-hoc data exploration queries.
+
+Deploy analytics:
+```
+sqlcmd -S localhost -d RestaurantDB -E -b -i "Analytics\Analytics.sql" -C
+```
 
 ## Reset / Rerun
-To reset the database and rerun:
+To reset the database and rerun, use the delete script:
+```
+sqlcmd -S localhost -d master -E -b -i "Database-Setup\deleteDB.sql" -C
+```
+Or manually:
 ```
 DROP DATABASE IF EXISTS RestaurantDB;
 GO
@@ -95,7 +119,7 @@ GO
 ## Troubleshooting
 - Constraint error on `RESERVATIONS.Status`: If the seed script fails with a CHECK constraint error, ensure you applied the constraint update shown above so the statuses `'No-Show'` and `'Cancelled'` are allowed.
 - Cannot connect with `sqlcmd`: Confirm the instance name (`-S`), authentication method (`-E` vs `-U`/`-P`), and that SQL Server is running.
-- File path issues: Run commands from the repository root so `Scripts\...` paths resolve correctly, or use absolute paths.
+- File path issues: Run commands from the repository root so `Database-Setup\...` and `Analytics\...` paths resolve correctly, or use absolute paths.
 - SSL certificate errors: Use `-C` flag to trust the server certificate (quick but less secure), or configure a trusted certificate:
   1. In SQL Server Configuration Manager, enable Force Encryption and install a valid certificate
   2. Export the SQL Server certificate (certmgr.msc → Local Computer → Personal → Certificates)
