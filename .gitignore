@@ -32,3 +32,6 @@ obj/
 # Trae IDE metadata
 .trae/
 
+# Local docs
+team_docs/
+
