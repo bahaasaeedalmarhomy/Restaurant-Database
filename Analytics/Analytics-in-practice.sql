@@ -201,3 +201,53 @@ LEFT JOIN MonthlyCustomers mc2
     AND mc2.Year = mc1.Year 
     AND mc2.Month = mc1.Month + 1
 GROUP BY mc1.Year, mc1.Month;
+
+
+-- ============================================================================
+-- ANALYTICS FUNCTIONS & PROCEDURES USAGE
+-- ============================================================================
+
+-- Scalar Function: Get total revenue for December 2024
+SELECT dbo.fn_GetRevenue('2024-12-01', '2024-12-31') AS DecemberRevenue;
+
+-- Scalar Function: Calculate lifetime value for customer ID 1
+SELECT dbo.fn_CustomerLifetimeValue(1) AS CustomerLTV;
+
+-- Scalar Function: Get inventory efficiency for inventory item ID 5
+SELECT dbo.fn_InventoryEfficiency(5) AS InventoryEfficiency;
+
+-- Table-Valued Function: Get top 10 menu items for December 2024
+SELECT * FROM dbo.fn_TopMenuItems('2024-12-01', '2024-12-31', 10);
+
+-- Table-Valued Function: Get hourly sales for December 31, 2024
+SELECT * FROM dbo.fn_HourlySales('2024-12-31') ORDER BY HourOfDay;
+
+-- Stored Procedure: Daily sales summary for December 1, 2025
+EXEC sp_DailySalesSummary '2025-12-01';
+
+-- Stored Procedure: Customer loyalty report (min 5 orders)
+EXEC sp_CustomerLoyaltyReport 5;
+
+-- Stored Procedure: Check inventory items that need reordering
+EXEC sp_InventoryReorderAlert;
+
+-- Stored Procedure: Staff performance for 2025
+EXEC sp_StaffPerformance '2025-01-01', '2025-12-31';
+
+-- Stored Procedure: Monthly trends for 2024
+EXEC sp_MonthlyTrends 2024;
+
+-- Stored Procedure: Menu item profitability analysis
+EXEC sp_MenuProfitability;
+
+-- View: Revenue by day of week
+SELECT * FROM vw_RevenueByDayOfWeek ORDER BY DayNumber;
+
+-- View: Customer retention rates
+SELECT * FROM vw_CustomerRetention ORDER BY Year, Month;
+
+-- View: Table utilization statistics
+SELECT * FROM vw_TableUtilization ORDER BY UtilizationRate DESC;
+
+-- View: Supply cost trends
+SELECT * FROM vw_SupplyCostTrends ORDER BY Year DESC, Month DESC;
