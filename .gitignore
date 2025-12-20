@@ -35,3 +35,16 @@ obj/
 # Local docs
 team_docs/
 
+# env files
+.env
+.env.local
+.env.*.local
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pycache
+.pytest_cache/
+

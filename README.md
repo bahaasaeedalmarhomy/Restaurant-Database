@@ -19,6 +19,12 @@ This repository contains T‑SQL scripts to create and seed a complete restauran
 │   ├── Analytics.sql         # Functions, procedures, triggers, and views for BI
 │   ├── useAnalytics.sql      # Testing script with examples for all analytics components
 │   └── Analytics-in-practice.sql  # Ad-hoc query examples for data exploration
+├── app/
+│   ├── flask_api.py     # Flask backend API server
+│   ├── streamlit_app.py # Streamlit frontend dashboard
+│   ├── queries.py       # SQL analytics query definitions
+│   ├── config.py        # Database connection configuration
+│   └── requirements.txt # Python dependencies
 ├── ERD-and-Mapping/
 │   ├── Restaurant-ERD-mapping.pdf  # Entity-Relationship Diagram mapping document
 │   └── Resturant-ERD.pdf           # Entity-Relationship Diagram
@@ -103,6 +109,44 @@ Deploy analytics:
 ```
 sqlcmd -S localhost -d RestaurantDB -E -b -i "Analytics\Analytics.sql" -C
 ```
+
+## Web Dashboard (Flask + Streamlit)
+The `app/` folder contains a visual analytics dashboard built with Flask (backend API) and Streamlit (frontend).
+
+### Dashboard Features
+- **Overview**: Key metrics, orders/revenue by day of week
+- **Menu Analytics**: Item performance, profit margins, daily top sellers
+- **Customer Analytics**: Loyalty tiers (VIP/Gold/Silver/Bronze), retention rates
+- **Staff Performance**: Sales metrics, orders handled per staff member
+- **Revenue Trends**: Monthly trends, hourly order distribution
+- **Custom Query**: Execute custom SELECT queries with CSV export
+
+### Running the Dashboard
+
+1) Install Python dependencies:
+```
+cd app
+pip install -r requirements.txt
+```
+
+2) Configure database connection (optional - defaults to Windows Auth on localhost):
+```
+copy .env.example .env
+# Edit .env with your database settings if needed
+```
+
+3) Start the Flask API server:
+```
+python flask_api.py
+```
+
+4) In a new terminal, start Streamlit:
+```
+cd app
+streamlit run streamlit_app.py
+```
+
+The dashboard will open at `http://localhost:8501` with interactive Plotly charts.
 
 ## Reset / Rerun
 To reset the database and rerun, use the delete script:
